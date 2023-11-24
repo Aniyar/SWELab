@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:swe_project/pages/login.dart';
 import 'pages/home.dart';
-
 import '/Classes/Driver.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:swe_project/pages/navbar.dart';
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
       return const MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: HomePage()
+          home: MyLoginPage()
       );
   }
 }

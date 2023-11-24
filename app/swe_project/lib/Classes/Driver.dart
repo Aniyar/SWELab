@@ -1,14 +1,37 @@
-/*class Driver
-{
-  Driver({required this.user_id,required this.user_login,required this.user_password});
-  var user_id;
-  var user_login;
-  var user_password;
+class Driver {
+  final String name;
+  final String governmentID;
+  final String address;
+  final String drivingLicenseCode;
+  final String assignedVehicleID;
+  final double performanceRating;
+  final String contactNumber;
+  final String drivingExperience;
+  final double averageRating;
+  final String profilePictureUrl;
+  final String totalTrips;
+  final String totalDistance;
 
-  factory Driver.fromJson(Map<String, dynamic> json) => Driver(
-  user_id: json['user_id'],
-  user_login:json['user_login'],
-  user_password: json ['user_password']
-  );
-}*/
+  // Constructor
+  const Driver({
+    required this.name,
+    required this.governmentID,
+    required this.address,
+    required this.drivingLicenseCode,
+    required this.assignedVehicleID,
+    required this.performanceRating,
+    required this.contactNumber,
+    required this.drivingExperience,
+    required this.averageRating,
+    required this.profilePictureUrl,
+    required this.totalDistance,
+    required this.totalTrips
+  });
+
+  // Getters
+  String getProfilePictureUrl() => profilePictureUrl;
+  double getPerformanceRating() => performanceRating;
+  String getContactNumber() => contactNumber;
+  String getDrivingExperience() => drivingExperience;
+}
 
