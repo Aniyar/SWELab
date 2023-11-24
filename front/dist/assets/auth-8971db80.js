@@ -1,0 +1,1 @@
+import{d as t,r as o,c as a,a as r,b as n,F as s,o as c}from"./index-f2f602f0.js";const l=t({__name:"auth",setup(_){return(u,m)=>{const e=o("router-view");return c(),a(s,null,[r(" Auth Layout "),n(e)],64)}}});export{l as default};

@@ -1,0 +1,22 @@
+@import "fonts.scss";
+
+$light: #F04D4D;
+$semi-light: #D14343;
+$semi-dark: #555555;
+$dark: #191919;
+$font-color: #ffffff;
+$font-primary: 'Cabin', sans-serif;
+
+
+body {
+  background: $dark;
+}
+
+* {
+  font-family: $font-primary;
+  color: $font-color;
+}
+
+.v-card {
+  background: $semi-dark;
+}
