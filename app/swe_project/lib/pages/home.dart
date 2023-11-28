@@ -1,14 +1,16 @@
 
 import 'dart:math';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../Classes/Task.dart';
+import '../Classes/task_route.dart';
 import 'navbar.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-
+import 'package:http/http.dart';
 import 'package:swe_project/main.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:swe_project/Classes/pair.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -19,15 +21,19 @@ class HomePage extends StatefulWidget {
 late double Current_User_Lat = 51.161808623949845;
 late double Current_User_Long = 71.38478414136185;
 
-late double tasklat = 43.234196832259315;
-late double tasklong = 76.87903336148781;
+late double taskstartlat = 43.234196832259315;
+late double taskstartlong = 76.87903336148781;
 
 late bool istaskactive = false;
 
 class _MyAppState extends State {
   late GoogleMapController mapController;
 
+
+
   Future<Position> _getCurrentLocation() async {
+
+
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if(!serviceEnabled)
     {
@@ -69,9 +75,9 @@ class _MyAppState extends State {
 
   LatLng _center = LatLng(Current_User_Lat, Current_User_Long);
 
-bool _checktaskActive (List<Task> tasks)
+bool _checktaskActive (List<Task_route> active_routes)
 {
-  if (tasks.isEmpty)
+  if (active_routes.isEmpty)
     {
       return false;
     }
@@ -81,25 +87,38 @@ bool _checktaskActive (List<Task> tasks)
     }
 }
 
+BitmapDescriptor markerIcon = BitmapDescriptor.defaultMarker;
 
+@override
+void initState()
+{
+  addCustomIcon();
+  super.initState();
+}
 
+void addCustomIcon()
+{
+  BitmapDescriptor.fromAssetImage(const ImageConfiguration(), "assets/marker.png")
+      .then(
+      (icon){
+        setState(() {
+          markerIcon = icon;
+        });
+      }
+  );
+}
 
 
 
   @override
   Widget build(BuildContext context) {
 
-    List<Task> tasks = [Task(task_id: 1, task_lat: 43.234196832259315, task_long: 76.87903336148781), Task(task_id: 2, task_lat: 72, task_long: 52) ];
+    List<Task_route> active_routes = [];
     Map<PolylineId, Polyline> polylines = {};
     List<LatLng> polylineCoordinates = [];
     PolylinePoints polylinePoints = PolylinePoints();
 
     void _onMapCreated (GoogleMapController controller) async{
-      /* _getCurrentLocation().then((value) {
-      Current_User_Lat = value.latitude;
-      Current_User_Long = value.longitude;
-      mapController.animateCamera(CameraUpdate.newLatLngZoom(LatLng(Current_User_Lat,Current_User_Long), 11));
-    }); */
       mapController = controller;
     }
 
@@ -116,7 +135,7 @@ bool _checktaskActive (List<Task> tasks)
       PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
           'AIzaSyArJEBe7KfGf8m8nU5WzTtMZWk1Q9e7kGU',
           PointLatLng(Current_User_Lat, Current_User_Long),
-          PointLatLng(tasklat, tasklong),
+          PointLatLng(taskstartlat, taskstartlong),
           travelMode: TravelMode.driving);
       if (result.points.isNotEmpty) {
         result.points.forEach((PointLatLng point) {
@@ -157,32 +176,44 @@ bool _checktaskActive (List<Task> tasks)
     ),
   );
 }
+    Marker user_marker = Marker(
+        markerId: MarkerId("0"),
+        position: LatLng(Current_User_Lat,Current_User_Long),
+        icon: BitmapDescriptor.defaultMarker
+    );
 
-    Set<Marker> markers = {
-      Marker(
-      markerId: MarkerId("0"),
-      position: LatLng(Current_User_Lat,Current_User_Long)
-      ),
+    Map<int,Pair> markers = {};
 
-      if(_checktaskActive(tasks)) ...
+      if(_checktaskActive(active_routes))
         {
-          for(int i = 0; i < tasks.length; i++) ...
-            {
+          for(int i = 0; i < active_routes.length; i++)
+            { markers[i] = Pair(
               Marker(
-                markerId: MarkerId("Task + ${i+1}"),
-                position: LatLng(tasks[i].task_lat, tasks[i].task_long),
+                markerId: MarkerId("Start of task  + ${i+1}"),
+                position: LatLng(double.parse(active_routes[i].startLat), double.parse(active_routes[i].startLon)),
 
-                infoWindow: InfoWindow(title: "Task + ${i+1}"),
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+                infoWindow: InfoWindow(title: "Start + ${i+1}"),
+                icon: markerIcon,
                 onTap: () {
                   _getPolyline();
-                  _setMapOrientation(Current_User_Long, Current_User_Lat, tasklong, tasklat);
+                  _setMapOrientation(Current_User_Long, Current_User_Lat, taskstartlong, taskstartlat);
                   },
               ),
+            Marker(
+            markerId: MarkerId("End of task  + ${i+1}"),
+            position: LatLng(double.parse(active_routes[i].endLat), double.parse(active_routes[i].endLon)),
 
+            infoWindow: InfoWindow(title: "End + ${i+1}"),
+            icon: markerIcon,
+            onTap: () {
+            _getPolyline();
+            _setMapOrientation(Current_User_Long, Current_User_Lat, taskstartlong, taskstartlat);
+            },
+            ),
+            );
             }
         }
-    };
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home:Scaffold(
@@ -202,7 +233,7 @@ bool _checktaskActive (List<Task> tasks)
     target: _center,
     zoom: 11,
     ),
-markers: Set.from(markers),
+
       polylines: Set<Polyline>.of(polylines.values),
       ),
 
