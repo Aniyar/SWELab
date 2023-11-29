@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swe_project/pages/driverconfirmation.dart';
 import 'package:swe_project/pages/login.dart';
+import 'Classes/driver.dart';
+import 'Classes/pair.dart';
 import 'pages/home.dart';
 import 'package:swe_project/Classes/user.dart';
 import '/Classes/user.dart';
@@ -30,6 +32,24 @@ class MyApp extends StatelessWidget {
   }
 
 
+  Future<Driver> _fetchDriver() async
+  {
+    String token = await _loadAuthToken();
+    http.Response response = await _getDriver(token);
+    Driver driver = Driver.fromJson(jsonDecode(response.body) as Map<String,dynamic>);
+    return driver;
+  }
+  Future<http.Response> _getDriver(String token) async
+  {
+    var driverresponse = await http.get(
+      Uri.parse('http://51.20.192.129:80/drivers/current'),
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+      },
+    );
+    return driverresponse;
+  }
 
   Future<http.Response> _getUser() async
   {
@@ -50,30 +70,32 @@ class MyApp extends StatelessWidget {
   }
 
 
-Future<bool> _isUserLogin() async{
+Future<Pair> _isUserLogin() async{
 
-    _saveAuthToken('');
+    //_saveAuthToken('');
     var authresponse = await _getUser();
 
     if(await _loadAuthToken() == '' || authresponse.statusCode != 200 )
       {
-        return false;
+        return Pair('',-1);
       }
     else
       {
-        return true;
+        Driver driver = await _fetchDriver();
+        return Pair(driver.user.role, driver.id);
       }
 
 }
   @override
   Widget build(BuildContext context) {
-      return FutureBuilder<bool>(
+      return FutureBuilder<Pair>(
           future: _isUserLogin(),
           builder: (context,snapshot) {
             if(snapshot.connectionState == ConnectionState.done) {
-              if(snapshot.data == true)
+              int id = snapshot.data?.b;
+              if(snapshot.data?.a == 'driver')
                 {
-                  return const ConfirmDriverPage();
+                  return HomePage(driverId: id);
                 }
               else
                 {
