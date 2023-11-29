@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:swe_project/pages/navbar.dart';
 import 'package:swe_project/Classes/user.dart';
+
+import '../Classes/driver.dart';
 class DriverInfoPage extends StatelessWidget {
-  final User driver;
+  final Driver driver;
+
 
   const DriverInfoPage({Key? key, required this.driver}) : super(key: key);
 
@@ -20,11 +23,11 @@ class DriverInfoPage extends StatelessWidget {
           children: [
             _buildProfileSection(),
             SizedBox(height: 16),
-            _buildInfoRow('Driver Firstname', driver.firstName),
-            _buildInfoRow('Driver Lastname', driver.lastName),
-            _buildInfoRow('Email', driver.email),
-            _buildInfoRow('Phonenumber', driver.phoneNumber),
-            _buildInfoRow('Assigned Vehicle ID', driver.role),
+            _buildInfoRow('Driver Firstname', driver.user.firstName),
+            _buildInfoRow('Driver Lastname', driver.user.lastName),
+            _buildInfoRow('Email', driver.user.email),
+            _buildInfoRow('Phonenumber', driver.user.phoneNumber),
+            _buildInfoRow('Assigned Vehicle ID', driver.user.role),
             SizedBox(height: 16),
             Text('Additional Information:', style: Theme.of(context).textTheme.subtitle1),
             SizedBox(height: 16),
@@ -53,12 +56,12 @@ class DriverInfoPage extends StatelessWidget {
           ),
           child: CircleAvatar(
             radius: 60,
-            backgroundImage: NetworkImage(driver.photo),
+            backgroundImage: NetworkImage(driver.user.photo),
           ),
         ),
         SizedBox(height: 16),
         Text(
-          driver.firstName,
+          driver.user.firstName,
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ],

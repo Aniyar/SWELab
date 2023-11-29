@@ -1,8 +1,11 @@
 
 
+import 'dart:convert';
+
 import 'package:location/location.dart';
 import 'package:flutter/material.dart';
-import 'package:swe_project/Classes/Task.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../Classes/driver.dart';
 import '../Classes/task_route.dart';
 import 'navbar.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -14,34 +17,98 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
 
+
+
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+
+  final int driverId;
+
+  HomePage({required this.driverId});
 
   @override
-  State createState() => _MyAppState();
+  _MyAppState createState() => _MyAppState();
 }
 
-late double Current_User_Lat = 51.0905;
-late double Current_User_Long = 71.3982;
-
-late double tasklat = 51.1325;
-late double tasklong = 71.4037;
 
 
-late bool istaskactive = true;
 
-class _MyAppState extends State {
+
+class _MyAppState extends State<HomePage> {
+  Set<Marker> markers = {};
+  late int driverId;
+  late double tasklat;
+  late double tasklong;
+  late double Current_User_Lat = 51.0905;
+  late double Current_User_Long = 71.3982;
+
   late GoogleMapController mapController;
-
+  Location location = Location();
   List<LatLng> polylineCoordinates = [];
   late PolylinePoints polylinePoints;
   LocationData? currentLocation;
-  bool isActiveRoute = false;
+  late bool isActiveRoute = false;
+  late List<Task_route> waiting_routes = [];
+  late Task_route task_route;
 
 
 
-    void _getCurrentLocation() async {
-      Location location = Location();
+  @override
+  void initState() {
+
+    addCustomIcon(Colors.blue, Colors.deepOrange);
+    super.initState();
+    driverId = widget.driverId;
+    _Initializevalues();
+
+  }
+
+
+
+
+
+
+  Future<String> _loadAuthToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token') ?? ''; // Get the token, or an empty string if not found
+  }
+
+
+  Future<List<Task_route>> _fetchRoutes(String driverId, String status) async {
+    var authresponse = await http.get(
+      Uri.parse('http://51.20.192.129:80/routes/all?driverId=$driverId&status=$status'),
+      headers: {
+        'Authorization': 'Bearer ' + await _loadAuthToken(),
+        'Content-Type': 'application/json',
+      },
+    );
+    if(authresponse.statusCode == 200)
+    {
+      Map<String, dynamic> jsonMap = json.decode(authresponse.body) as Map<String, dynamic>;
+
+      List<dynamic> taskListJson = jsonMap['content'];
+
+      List<Task_route> taskList = taskListJson
+          .map((taskJson) => Task_route.fromJson(taskJson))
+          .toList();
+      return taskList;
+    } else {
+      throw Exception('Failed to load routes');
+    }
+  }
+
+void _Initializevalues() async
+  {
+    await _getCurrentLocation();
+    await _isActiveTask();
+    await Future.delayed(Duration(seconds: 1));
+    await _createRoutes();
+    await Future.delayed(Duration(seconds: 1));
+    await _addMarkers();
+
+  }
+
+
+    Future<void> _getCurrentLocation() async {
       location.getLocation().then((location) {
         currentLocation = location;
       });
@@ -53,13 +120,16 @@ class _MyAppState extends State {
       location.onLocationChanged.listen((newLoc)
       {
         currentLocation = newLoc;
-            setState(() {
 
-              Current_User_Lat = currentLocation!.latitude!;
-              Current_User_Long = currentLocation!.longitude!;
-            });
+            if (mounted) {
+              setState(() {
+                Current_User_Lat = currentLocation!.latitude!;
+                Current_User_Long = currentLocation!.longitude!;
+              });
+            }
             if(isActiveRoute)
               {
+                _sendLocation(Current_User_Lat, Current_User_Long);
                 _getPolyline(tasklat,tasklong);
               }
 
@@ -67,49 +137,104 @@ class _MyAppState extends State {
       );
     }
 
+  @override
+  void dispose() {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void _getPolyline(double tasklat, double tasklong) async {
-  polylineCoordinates = [];
-  PolylinePoints polylinePoints = PolylinePoints();
-  PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-      "AIzaSyArJEBe7KfGf8m8nU5WzTtMZWk1Q9e7kGU",
-      PointLatLng(Current_User_Lat, Current_User_Long),
-      PointLatLng(tasklat, tasklong),
-      );
-  if (result.points.isNotEmpty) {
-    result.points.forEach((PointLatLng point) => polylineCoordinates.add(LatLng(point.latitude, point.longitude))
-    );
+    // Cancel location updates when the widget is disposed
+    location.onLocationChanged.listen((LocationData newLoc) {}).cancel();
+    super.dispose();
   }
-  setState(() {
 
-  });
 
+
+Future<void> _sendLocation(double longitude, double latitude) async
+{
+  String token = await _loadAuthToken();
+  var authresponse = await http.post(
+      Uri.parse('http://51.20.192.129:80/vehicles/update-location'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(<String,String>{
+        'longitude' : longitude.toString(),
+        'latitude' : latitude.toString(),
+      })
+
+  );
 }
 
 
 
 
 
+  void _getPolyline(double tasklat, double tasklong) async {
+    List<LatLng> tempPolylineCoordinates = [];
+    PolylinePoints polylinePoints = PolylinePoints();
 
-  void _onMapCreated (GoogleMapController controller) async{
-    mapController = controller;
+    try {
+      PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+        "AIzaSyArJEBe7KfGf8m8nU5WzTtMZWk1Q9e7kGU",
+        PointLatLng(Current_User_Lat, Current_User_Long),
+        PointLatLng(tasklat, tasklong),
+      );
+
+      if (result.points.isNotEmpty) {
+        result.points.forEach((PointLatLng point) =>
+            tempPolylineCoordinates.add(LatLng(point.latitude, point.longitude)));
+      }
+
+      // Check if the widget is still mounted before updating the state
+      if (mounted) {
+        setState(() {
+          polylineCoordinates = tempPolylineCoordinates;
+        });
+      }
+    } catch (e) {
+      // Handle any exceptions or errors here
+      print('Error in _getPolyline: $e');
+    }
   }
 
+Future<void> _isActiveTask() async
+{
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  List<Task_route> tasks = await _fetchRoutes(driverId.toString(), "IN_PROGRESS");
+  //print(tasks.isEmpty);
+  if(tasks.isEmpty)
+    {
+      isActiveRoute = false;
+    }
+  else
+    {
+      isActiveRoute = true;
+    }
+  setState(() {
+
+  });
+}
+
+Future<void> _createRoutes() async
+{
+  if(isActiveRoute) {
+    task_route =
+        (await _fetchRoutes(driverId.toString(), "IN_PROGRESS"))[0];
+    waiting_routes = [];
+  }
+  else
+  {
+    waiting_routes = await _fetchRoutes(driverId.toString(), "WAITING");
+  }
+  setState(() {
+    tasklat = double.parse(task_route.endLat);
+    tasklong = double.parse(task_route.endLon);
+  });
+}
+
+  void _onMapCreated (GoogleMapController controller) async{
+
+    mapController = controller;
+  }
   BitmapDescriptor markerIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor markerIconStart = BitmapDescriptor.defaultMarker;
   BitmapDescriptor markerIconEnd = BitmapDescriptor.defaultMarker;
@@ -155,13 +280,7 @@ void _getPolyline(double tasklat, double tasklong) async {
 
   }
 
-  @override
-  void initState()
-  {
-    _getCurrentLocation();
-    addCustomIcon(Colors.blue, Colors.deepOrange);
-    super.initState();
-  }
+
   void _setMapOrientation(double Current_User_Lat,double Current_User_Long,double tasklat, double tasklong) {
     double miny = (Current_User_Lat <= tasklat)
         ? Current_User_Lat
@@ -197,6 +316,10 @@ void _getPolyline(double tasklat, double tasklong) async {
     return Color((math.Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0);
   }
 
+bool isInitialized(dynamic variable)
+{
+  return variable != null;
+}
 
 Set<Marker> _addStartMarkers(List<Task_route> waiting_routes)
    {
@@ -247,6 +370,20 @@ Set<Marker> _addActiveMarkers(Task_route task_route)
   return markers;
 }
 
+Future<void> _addMarkers()
+  async {
+  if(!isActiveRoute)
+  {
+  markers = _addStartMarkers(waiting_routes);
+  }
+  else
+  {
+  markers = _addActiveMarkers(task_route);
+  }
+  setState(() {
+
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -258,20 +395,13 @@ Set<Marker> _addActiveMarkers(Task_route task_route)
     );
 
 
-   // List<Task_route> waiting_routes = fetchRoutes(driverId, 'WAITING');
 
-    Set<Marker> markers = {};
-    List<Task_route> waiting_routes = [];
-    //Task_route task_route = fetchRoutes(driverId, 'IN_PROGRESS');
-    Task_route task_route;
-    if(!isActiveRoute)
-    {
-      markers = _addStartMarkers(waiting_routes);
-    }
-    else
-    {
-      //markers = _addActiveMarkers(task_route);
-    }
+
+    //List<Task_route> waiting_routes = [];
+
+
+    //Task_route task_route;
+
       markers.add(user_marker);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -283,9 +413,7 @@ Set<Marker> _addActiveMarkers(Task_route task_route)
             iconTheme: IconThemeData(color: Colors.yellow),
           backgroundColor: Colors.brown
         ),
-    body: currentLocation == null
-      ? const Center(child:Text("Loading. Please wait"))
-      : GoogleMap(
+    body: GoogleMap(
     compassEnabled: true,
     scrollGesturesEnabled: true,
     zoomGesturesEnabled: true,

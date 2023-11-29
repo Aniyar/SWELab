@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:swe_project/Classes/Task.dart';
 import 'package:http/http.dart' as http;
+import 'package:swe_project/Classes/user.dart';
 import 'driver.dart';
 
 Future<String> _loadAuthToken() async {
@@ -42,58 +42,26 @@ class Task_route {
 
   });
   factory Task_route.fromJson(Map<String, dynamic> json) {
-    return switch (json) {
-      {
-      'driver': Driver driver,
-      'staff': var staff,
-      'vehicle' : var vehicle,
-      "startPoint": String startPoint,
-      "startLat": String startLat,
-      "startLon": String startLon,
-      "endPoint": String endPoint,
-      "endLat": String endLat,
-      "endLon": String endLon,
-      "startTime": var startTime,
-      "endTime": var endTime,
-      "status": String status,
-      } =>
-          Task_route(
-            route_id: 1,
-              driver: driver,
-            staff: staff,
-            vehicle: vehicle,
-            startPoint: startPoint,
-            startLat: startLat,
-            startLon: startLon,
-            endPoint: endPoint,
-            endLat: endLat,
-            endLon: endLon,
-            startTime: startTime,
-            endTime: endTime,
-            status: status,
-          ),
-      _ => throw const FormatException('Failed to load token.'),
-    };
+    return Task_route(
+      route_id: json['id'] as int,
+      driver: Driver.fromJson(json['driver']),
+      staff: json['staff'], // Adjust the type of 'staff' based on your data structure
+      vehicle: json['vehicle'], // Adjust the type of 'vehicle' based on your data structure
+      startPoint: json['startPoint'] as String,
+      startLat: json['startLat'] as String,
+      startLon: json['startLon'] as String,
+      endPoint: json['endPoint'] as String,
+      endLat: json['endLat'] as String,
+      endLon: json['endLon'] as String,
+      startTime: json['startTime'], // Adjust the type of 'startTime' based on your data structure
+      endTime: json['endTime'], // Adjust the type of 'endTime' based on your data structure
+      status: json['status'] as String,
+    );
   }
 
+
 }
-Future<List<Task_route>> fetchRoutes(String driverId, String status) async {
-  var authresponse = await http.get(
-    Uri.parse('http://51.20.192.129:80/routes/all?driverId=$driverId&status=$status'),
-    headers: {
-      'Authorization': 'Bearer ' + await _loadAuthToken(),
-      'Content-Type': 'application/json',
-    },
-  );
-  if(authresponse.statusCode == 200)
-    {
-      final List<dynamic> TaskRoutesJson = json.decode(authresponse.body);
-      List<Task_route> Tasks = TaskRoutesJson.map((albumJson) => Task_route.fromJson(albumJson)).toList();
-      return Tasks;
-    } else {
-    throw Exception('Failed to load albums');
-  }
-    }
+
 
     Future<void> ChangeStatus(String routeId, String status) async
     {

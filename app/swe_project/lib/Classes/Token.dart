@@ -20,7 +20,8 @@ class Token {
     };
   }
 
-
-
 }
-
+Future<String> _loadAuthToken() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('auth_token') ?? ''; // Get the token, or an empty string if not found
+}

@@ -1,4 +1,4 @@
-class Driver {
+/*class Driver {
   final String name;
   final String governmentID;
   final String address;
@@ -33,5 +33,5 @@ class Driver {
   double getPerformanceRating() => performanceRating;
   String getContactNumber() => contactNumber;
   String getDrivingExperience() => drivingExperience;
-}
+} */
 

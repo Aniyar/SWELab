@@ -4,6 +4,8 @@ import 'package:swe_project/pages/home.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+
+import '../Classes/driver.dart';
 class ConfirmDriverPage extends StatefulWidget {
   const ConfirmDriverPage({super.key});
 
@@ -24,18 +26,38 @@ class _ConfirmDriverPageState extends State {
     return prefs.getString('auth_token') ?? ''; // Get the token, or an empty string if not found
   }
 
-  Future<http.Response> _createDriver(String address, String licenseNumber) async
+  Future<Driver> _fetchDriver() async
   {
-    var authresponse = await http.post(
-      Uri.parse('http://51.20.192.129:80/drivers'),
+    String token = await _loadAuthToken();
+    http.Response response = await _getDriver(token);
+    Driver driver = Driver.fromJson(jsonDecode(response.body) as Map<String,dynamic>);
+    return driver;
+  }
+  Future<http.Response> _getDriver(String token) async
+  {
+    var driverresponse = await http.get(
+      Uri.parse('http://51.20.192.129:80/drivers/current'),
       headers: {
-        'Authorization': 'Bearer ' + await _loadAuthToken(),
+        'Authorization': 'Bearer ' + token,
         'Content-Type': 'application/json',
       },
-      body: jsonEncode(<String,String>{
-        'address' : address,
-        'licenseNumber' : licenseNumber,
-      })
+    );
+    return driverresponse;
+  }
+
+
+  Future<http.Response> _createDriver(String address, String licenseNumber, String token) async
+  {
+    var authresponse = await http.post(
+        Uri.parse('http://51.20.192.129:80/drivers'),
+        headers: {
+          'Authorization': 'Bearer ' + await token,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(<String,String>{
+          'address' : address,
+          'licenseNumber' : licenseNumber,
+        })
 
     );
     return authresponse;
@@ -84,16 +106,18 @@ class _ConfirmDriverPageState extends State {
                 ElevatedButton(
                   onPressed: () async {
                     // Capture the entered values
+                    String token = await _loadAuthToken();
                     userAddress = _AdressController.text;
                     userLicenseN = _LicenseNController.text;
-
+                    Driver driver = await _fetchDriver();
+                    int driverId = driver.id;
                     if(userAddress != '' || userLicenseN !='') {
-                      http.Response createReponse = await _createDriver(userAddress, userLicenseN);
+                      http.Response createReponse = await _createDriver(userAddress, userLicenseN, token);
                       if(createReponse.statusCode >= 200 && createReponse.statusCode < 300)
                         {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => HomePage()),
+                            MaterialPageRoute(builder: (context) => HomePage(driverId: driverId,)),
                           );
                         }
                       else

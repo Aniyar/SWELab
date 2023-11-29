@@ -8,6 +8,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:swe_project/Classes/Token.dart';
 import 'package:swe_project/Classes/user.dart';
+
+import '../Classes/driver.dart';
 class MyLoginPage extends StatefulWidget {
   const MyLoginPage({super.key});
   @override
@@ -27,10 +29,7 @@ class _MyLoginPageState extends State {
 
 
 
-  Future<User> _fetchUser(http.Response response) async
-  {
-    return User.fromJson(jsonDecode(response.body) as Map<String,dynamic>);
-  }
+
 
   Future<void> _saveAuthToken(String token) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -47,6 +46,10 @@ class _MyLoginPageState extends State {
     return Token.fromJson(jsonDecode(response.body) as Map<String,dynamic>).token;
   }
 
+  Future<User> _fetchUser(http.Response response) async
+  {
+    return User.fromJson(jsonDecode(response.body) as Map<String,dynamic>);
+  }
 
   Future<http.Response> _getUser(String token) async
   {
@@ -59,6 +62,14 @@ class _MyLoginPageState extends State {
     );
     return authresponse;
   }
+
+  Future<Driver> _fetchDriver(http.Response response) async
+  {
+    print(response.statusCode);
+    Driver driver = Driver.fromJson(jsonDecode(response.body) as Map<String,dynamic>);
+    return driver;
+  }
+
 
   Future<http.Response> _getDriver() async
   {
@@ -167,13 +178,21 @@ class _MyLoginPageState extends State {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
 
   if (user != null) {
+
+
+    prefs.setString('username', user.username);
+    prefs.setString('firstName', user.firstName);
+    prefs.setString('lastName', user.lastName);
+    prefs.setString('email', user.email);
     if (user.role == 'driver') {
       http.Response driverResponse = await _getDriver();
+      Driver driver = await _fetchDriver(driverResponse);
+      prefs.setString('driverId', '${driver.id}');
         if(driverResponse.statusCode == 200)
         {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
+            MaterialPageRoute(builder: (context) =>  HomePage(driverId: driver.id)),
           );
         }
         else if (driverResponse.statusCode == 404)
