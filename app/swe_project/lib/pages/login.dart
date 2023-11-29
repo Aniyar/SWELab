@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:swe_project/pages/driverconfirmation.dart';
 import 'package:swe_project/pages/home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -10,12 +11,12 @@ import 'package:swe_project/Classes/user.dart';
 class MyLoginPage extends StatefulWidget {
   const MyLoginPage({super.key});
   @override
-  _MyLoginPageState createState() => _MyLoginPageState();
+  State createState() => _MyLoginPageState();
 }
 
-class _MyLoginPageState extends State<MyLoginPage> {
+class _MyLoginPageState extends State {
   // Controllers to manage the input fields
-  String authToken = '';
+
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -23,6 +24,14 @@ class _MyLoginPageState extends State<MyLoginPage> {
   // Variables to store the entered email and password
   String userEmail = '';
   String userPassword = '';
+
+
+
+  Future<User> _fetchUser(http.Response response) async
+  {
+    return User.fromJson(jsonDecode(response.body) as Map<String,dynamic>);
+  }
+
   Future<void> _saveAuthToken(String token) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
@@ -30,18 +39,42 @@ class _MyLoginPageState extends State<MyLoginPage> {
 
   Future<String> _loadAuthToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-      return authToken = prefs.getString('auth_token') ?? ''; // Get the token, or an empty string if not found
+    return prefs.getString('auth_token') ?? ''; // Get the token, or an empty string if not found
   }
 
   Future<String> _fetchToken(http.Response response) async
   {
-  return Token.fromJson(jsonDecode(response.body) as Map<String,dynamic>).token;
+    return Token.fromJson(jsonDecode(response.body) as Map<String,dynamic>).token;
   }
-  Future<User> _fetchUser(http.Response response) async
+
+
+  Future<http.Response> _getUser(String token) async
   {
-    return User.fromJson(jsonDecode(response.body) as Map<String,dynamic>);
+    var authresponse = await http.get(
+      Uri.parse('http://51.20.192.129:80/users/my'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    return authresponse;
   }
-  Future<String> _applogin (String username, String password) async
+
+  Future<http.Response> _getDriver() async
+  {
+    var driverresponse = await http.get(
+      Uri.parse('http://51.20.192.129:80/drivers/current'),
+      headers: {
+        'Authorization': 'Bearer ' + await _loadAuthToken(),
+        'Content-Type': 'application/json',
+      },
+    );
+    print(driverresponse.statusCode);
+    return driverresponse;
+  }
+
+
+  Future<User?> _applogin (String username, String password) async
   {
     var url = Uri.http('51.20.192.129:80', 'auth/login');
     var response = await http.post(
@@ -49,36 +82,39 @@ class _MyLoginPageState extends State<MyLoginPage> {
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'username': username, 'password': password}),
     );
+    print(response.statusCode);
     if (response.statusCode == 200) {
       _saveAuthToken(await _fetchToken(response));
       print(_loadAuthToken());
-      var authresponse = await http.get(
-        Uri.parse('http://51.20.192.129:80/users/my'),
-        headers: {
-          'Authorization': 'Bearer ' + await _loadAuthToken(),
-          'Content-Type': 'application/json',
-        },
-      );
-      print("response: " + authresponse.body);
+      var authresponse = await _getUser(await _loadAuthToken());
+      print(authresponse.statusCode);
       if (authresponse.statusCode == 200) {
         User user = await _fetchUser(authresponse);
-        return user.role;
+        return user;
       }
       else
         {
           print("something went wrong");
-          return '';
+          return null;
         }
   }
   else
   {
     print("wrong input");
-    return '';
+    return null;
   }
   }
+
+
+
+
+
+
+
+
   @override
   Widget build(BuildContext context) {
-  return MaterialApp(
+    return MaterialApp(
   debugShowCheckedModeBanner: false,
   home: Scaffold(
   backgroundColor: Colors.grey[200],
@@ -121,25 +157,40 @@ class _MyLoginPageState extends State<MyLoginPage> {
   // Login button
   ElevatedButton(
   onPressed: () async {
+
   // Capture the entered values
   userEmail = _emailController.text;
   userPassword = _passwordController.text;
 
-  String user_role = await _applogin(userEmail, userPassword);
+  User? user = await _applogin(userEmail, userPassword);
+
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  // Check if credentials are correct
-  if (user_role == 'driver')
-  {
 
-  Navigator.push(
-  context,
-  MaterialPageRoute(builder: (context) => HomePage()),
-  );
-  }
-  else {
-    print("Hello there " + user_role);
-
-  // TODO: Handle incorrect credentials (e.g., show an error message)
+  if (user != null) {
+    if (user.role == 'driver') {
+      http.Response driverResponse = await _getDriver();
+        if(driverResponse.statusCode == 200)
+        {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        }
+        else if (driverResponse.statusCode == 404)
+        {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ConfirmDriverPage()),
+          );
+      }
+        else
+          {
+            print("something very bad happened");
+          }
+    }
+    else {
+      print("");
+    }
   }
   },
   child: Text('Login'),

@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:swe_project/Classes/Token.dart';
 class User {
 final int userId;
   final String username;
@@ -56,7 +57,6 @@ final int userId;
     _ => throw const FormatException('Failed to load User.'),
   };
 }
-
 
 
 }
