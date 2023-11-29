@@ -1,14 +1,19 @@
 
-import 'dart:math';
 
+import 'package:location/location.dart';
 import 'package:flutter/material.dart';
-import '../Classes/Task.dart';
+import 'package:swe_project/Classes/Task.dart';
+import '../Classes/task_route.dart';
 import 'navbar.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'dart:math' as math;
+import 'package:http/http.dart' as http;
+import 'package:swe_project/Classes/pair.dart';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
 
-import 'package:swe_project/main.dart';
-import 'package:geolocator/geolocator.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -16,173 +21,258 @@ class HomePage extends StatefulWidget {
   State createState() => _MyAppState();
 }
 
-late double Current_User_Lat = 51.161808623949845;
-late double Current_User_Long = 71.38478414136185;
+late double Current_User_Lat = 51.0905;
+late double Current_User_Long = 71.3982;
 
-late double tasklat = 43.234196832259315;
-late double tasklong = 76.87903336148781;
+late double tasklat = 51.1325;
+late double tasklong = 71.4037;
 
-late bool istaskactive = false;
+
+late bool istaskactive = true;
 
 class _MyAppState extends State {
   late GoogleMapController mapController;
 
-  Future<Position> _getCurrentLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if(!serviceEnabled)
-    {
-      return Future.error('Location services are disabled.');
-    }
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied)
-    {
-      permission = await Geolocator.requestPermission();
-    }
-    if(permission == LocationPermission.denied)
-    {
-      return Future.error('Location permissions are denied');
-    }
-
-    if (permission == LocationPermission.deniedForever)
-    {
-      return Future.error('There is nothing we can do');
-    }
-    return await Geolocator.getCurrentPosition();
-  }
+  List<LatLng> polylineCoordinates = [];
+  late PolylinePoints polylinePoints;
+  LocationData? currentLocation;
+  bool isActiveRoute = false;
 
 
 
-  void_liveLocation(){
-    LocationSettings locationSettings = const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 100
+    void _getCurrentLocation() async {
+      Location location = Location();
+      location.getLocation().then((location) {
+        currentLocation = location;
+      });
+      location.changeSettings(
+        interval: 1000,
+        distanceFilter: 10,
+        accuracy: LocationAccuracy.high
+      );
+      location.onLocationChanged.listen((newLoc)
+      {
+        currentLocation = newLoc;
+            setState(() {
+
+              Current_User_Lat = currentLocation!.latitude!;
+              Current_User_Long = currentLocation!.longitude!;
+            });
+            if(isActiveRoute)
+              {
+                _getPolyline(tasklat,tasklong);
+              }
+
+      },
+      );
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void _getPolyline(double tasklat, double tasklong) async {
+  polylineCoordinates = [];
+  PolylinePoints polylinePoints = PolylinePoints();
+  PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+      "AIzaSyArJEBe7KfGf8m8nU5WzTtMZWk1Q9e7kGU",
+      PointLatLng(Current_User_Lat, Current_User_Long),
+      PointLatLng(tasklat, tasklong),
+      );
+  if (result.points.isNotEmpty) {
+    result.points.forEach((PointLatLng point) => polylineCoordinates.add(LatLng(point.latitude, point.longitude))
     );
-    Geolocator.getPositionStream(locationSettings: locationSettings)
-        .listen((Position position) {
-      Current_User_Lat = position.latitude;
-      Current_User_Long = position.longitude;
-    }
-    );
   }
+  setState(() {
 
+  });
 
-
-  LatLng _center = LatLng(Current_User_Lat, Current_User_Long);
-
-bool _checktaskActive (List<Task> tasks)
-{
-  if (tasks.isEmpty)
-    {
-      return false;
-    }
-  else
-    {
-      return true;
-    }
 }
 
 
 
 
+
+
+  void _onMapCreated (GoogleMapController controller) async{
+    mapController = controller;
+  }
+
+  BitmapDescriptor markerIcon = BitmapDescriptor.defaultMarker;
+  BitmapDescriptor markerIconStart = BitmapDescriptor.defaultMarker;
+  BitmapDescriptor markerIconEnd = BitmapDescriptor.defaultMarker;
+  Future<Uint8List?> getBytesFromAsset(String path, int width) async {
+    ByteData data = await rootBundle.load(path);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
+    ui.FrameInfo fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))?.buffer.asUint8List();
+  }
+
+  void addCustomIcon(Color color1, Color color2) async {
+    final Uint8List? markerIconUint = await getBytesFromAsset('assets/marker.png', 150);
+    final Uint8List? coloredBytes = await applyColorFilter(markerIconUint, color1);
+    final Uint8List? markerIconUintStart = await getBytesFromAsset('assets/marker.png', 100);
+    final Uint8List? coloredBytesStart = await applyColorFilter(markerIconUintStart, color2);
+    final Uint8List? markerIconUintEnd = await getBytesFromAsset('assets/marker.png', 150);
+    final Uint8List? coloredBytesEnd = await applyColorFilter(markerIconUintEnd, color2);
+    markerIcon = BitmapDescriptor.fromBytes(coloredBytes!);
+    markerIconStart = BitmapDescriptor.fromBytes(coloredBytesStart!);
+    markerIconEnd = BitmapDescriptor.fromBytes(coloredBytesEnd!);
+    setState(() {
+      markerIcon = markerIcon;
+      markerIconStart = markerIconStart;
+      markerIconEnd = markerIconEnd;
+    });
+  }
+
+
+
+  Future<Uint8List?> applyColorFilter(Uint8List? originalBytes, Color color) async {
+    if (originalBytes == null) return null;
+
+    final ui.Image image = await decodeImageFromList(originalBytes);
+    final Paint paint = Paint()..colorFilter = ColorFilter.mode(color, BlendMode.srcIn);
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+
+    canvas.drawImage(image, Offset(0, 0), paint);
+
+    final ui.Image coloredImage = await recorder.endRecording().toImage(image.width, image.height);
+
+    return (await coloredImage.toByteData(format: ui.ImageByteFormat.png))?.buffer.asUint8List();
+
+  }
+
+  @override
+  void initState()
+  {
+    _getCurrentLocation();
+    addCustomIcon(Colors.blue, Colors.deepOrange);
+    super.initState();
+  }
+  void _setMapOrientation(double Current_User_Lat,double Current_User_Long,double tasklat, double tasklong) {
+    double miny = (Current_User_Lat <= tasklat)
+        ? Current_User_Lat
+        : tasklat;
+    double minx = (Current_User_Long <= tasklong)
+        ? Current_User_Long
+        : tasklong;
+    double maxy = (Current_User_Lat <= tasklat)
+        ? tasklat
+        : Current_User_Lat;
+    double maxx = (Current_User_Long <= tasklong)
+        ? tasklong
+        : Current_User_Long;
+
+    double southWestLatitude = miny;
+    double southWestLongitude = minx;
+
+    double northEastLatitude = maxy;
+    double northEastLongitude = maxx;
+    mapController.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          northeast: LatLng(northEastLatitude, northEastLongitude),
+          southwest: LatLng(southWestLatitude, southWestLongitude),
+        ),
+        100.0,
+      ),
+    );
+  }
+
+  Color _getRandomColor()
+  {
+    return Color((math.Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0);
+  }
+
+
+Set<Marker> _addStartMarkers(List<Task_route> waiting_routes)
+   {
+  Set<Marker> markers = {};
+  Map<int,Marker> Start_markers = {};
+  for(int i = 0; i < waiting_routes.length; i++)
+  { Start_markers[i] = Marker(
+    markerId: MarkerId("${i+1}"),
+    position: LatLng(double.parse(waiting_routes[i].startLat), double.parse(waiting_routes[i].startLon)),
+
+    infoWindow: InfoWindow(title: waiting_routes[i].startPoint),
+    icon: markerIcon,
+    onTap: () {
+      _setMapOrientation(Current_User_Lat, Current_User_Long, Start_markers[i]!.position.latitude, Start_markers[i]!.position.longitude);
+      _getPolyline(Start_markers[i]!.position.latitude, Start_markers[i]!.position.longitude);
+    },
+  );
+    markers.add(Start_markers[i]!);
+  }
+  return markers;
+}
+Set<Marker> _addActiveMarkers(Task_route task_route)
+   {
+  Color color = _getRandomColor();
+  Set<Marker> markers = {};
+  markers.add(
+    Marker(
+    markerId: MarkerId("Start"),
+    position: LatLng(double.parse(task_route.startLat), double.parse(task_route.startLon)),
+      infoWindow: InfoWindow(title: task_route.startPoint),
+      icon: markerIconStart,
+      onTap: () {
+        _setMapOrientation(double.parse(task_route.startLat), double.parse(task_route.startLon), double.parse(task_route.endLat), double.parse(task_route.endLon));
+      },
+  ),
+  );
+  markers.add(
+    Marker(
+      markerId: MarkerId("End"),
+      position: LatLng(double.parse(task_route.endLat), double.parse(task_route.endLon)),
+      infoWindow: InfoWindow(title: task_route.endPoint),
+      icon: markerIconEnd,
+      onTap: () {
+        _setMapOrientation( double.parse(task_route.startLat), double.parse(task_route.startLon), double.parse(task_route.endLat), double.parse(task_route.endLon));
+      },
+    ),
+  );
+  return markers;
+}
 
 
   @override
   Widget build(BuildContext context) {
 
-    List<Task> tasks = [Task(task_id: 1, task_lat: 43.234196832259315, task_long: 76.87903336148781), Task(task_id: 2, task_lat: 72, task_long: 52) ];
-    Map<PolylineId, Polyline> polylines = {};
-    List<LatLng> polylineCoordinates = [];
-    PolylinePoints polylinePoints = PolylinePoints();
+    Marker user_marker = Marker(
+        markerId: MarkerId("0"),
+        position: LatLng(Current_User_Lat,Current_User_Long),
+        icon: BitmapDescriptor.defaultMarker
+    );
 
-    void _onMapCreated (GoogleMapController controller) async{
-      /* _getCurrentLocation().then((value) {
-      Current_User_Lat = value.latitude;
-      Current_User_Long = value.longitude;
-      mapController.animateCamera(CameraUpdate.newLatLngZoom(LatLng(Current_User_Lat,Current_User_Long), 11));
-    }); */
-      mapController = controller;
+
+   // List<Task_route> waiting_routes = fetchRoutes(driverId, 'WAITING');
+
+    Set<Marker> markers = {};
+    List<Task_route> waiting_routes = [];
+    //Task_route task_route = fetchRoutes(driverId, 'IN_PROGRESS');
+    Task_route task_route;
+    if(!isActiveRoute)
+    {
+      markers = _addStartMarkers(waiting_routes);
     }
-
-    _addPolyLine() {
-      PolylineId id = PolylineId("poly");
-      Polyline polyline = Polyline(
-          polylineId: id, color: Colors.red, points: polylineCoordinates);
-      polylines[id] = polyline;
-      setState(() {});
+    else
+    {
+      //markers = _addActiveMarkers(task_route);
     }
-
-
-    _getPolyline() async {
-      PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-          'AIzaSyArJEBe7KfGf8m8nU5WzTtMZWk1Q9e7kGU',
-          PointLatLng(Current_User_Lat, Current_User_Long),
-          PointLatLng(tasklat, tasklong),
-          travelMode: TravelMode.driving);
-      if (result.points.isNotEmpty) {
-        result.points.forEach((PointLatLng point) {
-          polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-        });
-      }
-      _addPolyLine();
-    }
-
-
-
- void _setMapOrientation(double Current_User_Long,double Current_User_Lat,double tasklong, double tasklat) {
-  double miny = (Current_User_Lat <= tasklat)
-      ? Current_User_Lat
-      : tasklat;
-  double minx = (Current_User_Long <= tasklong)
-      ? Current_User_Long
-      : tasklong;
-  double maxy = (Current_User_Lat <= tasklat)
-      ? tasklat
-      : Current_User_Lat;
-  double maxx = (Current_User_Long <= tasklong)
-      ? tasklong
-      : Current_User_Long;
-
-  double southWestLatitude = miny;
-  double southWestLongitude = minx;
-
-  double northEastLatitude = maxy;
-  double northEastLongitude = maxx;
-  mapController.animateCamera(
-    CameraUpdate.newLatLngBounds(
-      LatLngBounds(
-        northeast: LatLng(northEastLatitude, northEastLongitude),
-        southwest: LatLng(southWestLatitude, southWestLongitude),
-      ),
-      100.0,
-    ),
-  );
-}
-
-    Set<Marker> markers = {
-      Marker(
-      markerId: MarkerId("0"),
-      position: LatLng(Current_User_Lat,Current_User_Long)
-      ),
-
-      if(_checktaskActive(tasks)) ...
-        {
-          for(int i = 0; i < tasks.length; i++) ...
-            {
-              Marker(
-                markerId: MarkerId("Task + ${i+1}"),
-                position: LatLng(tasks[i].task_lat, tasks[i].task_long),
-
-                infoWindow: InfoWindow(title: "Task + ${i+1}"),
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
-                onTap: () {
-                  _getPolyline();
-                  _setMapOrientation(Current_User_Long, Current_User_Lat, tasklong, tasklat);
-                  },
-              ),
-
-            }
-        }
-    };
+      markers.add(user_marker);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home:Scaffold(
@@ -193,35 +283,28 @@ bool _checktaskActive (List<Task> tasks)
             iconTheme: IconThemeData(color: Colors.yellow),
           backgroundColor: Colors.brown
         ),
-    body: GoogleMap(
+    body: currentLocation == null
+      ? const Center(child:Text("Loading. Please wait"))
+      : GoogleMap(
     compassEnabled: true,
     scrollGesturesEnabled: true,
     zoomGesturesEnabled: true,
+    myLocationEnabled: true,
     onMapCreated: _onMapCreated,
     initialCameraPosition: CameraPosition(
-    target: _center,
-    zoom: 11,
+    target: LatLng(Current_User_Lat, Current_User_Long),
+    zoom: 14,
     ),
-markers: Set.from(markers),
-      polylines: Set<Polyline>.of(polylines.values),
+    markers: markers,
+      polylines: {
+      Polyline(
+          polylineId: PolylineId("route"),
+        points: polylineCoordinates,
+          color: Colors.green,
+        width: 6,
       ),
-
-floatingActionButton: FloatingActionButton(
-
-  onPressed: ()
-  {
-    _getCurrentLocation().then((value){
-      setState(() {
-        Current_User_Lat = value.latitude;
-        Current_User_Long = value.longitude;
-        mapController.animateCamera(CameraUpdate.newLatLngZoom(LatLng(Current_User_Lat,Current_User_Long), 11));
-      });
-    });
-  },
-  child: const Icon(Icons.location_on),
-    ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
-
+      },
+      ),
     ),
 
     );
