@@ -57,11 +57,18 @@ class _TaskPageState extends State<TasksPage>
   {
   tasks = await _fetchRoutes(driverId.toString(), "WAITING");
   List<Task_route> buffer =(await _fetchRoutes(driverId.toString(), "IN_PROGRESS"));
-  if(buffer.isNotEmpty) {
-    buffer.first;
-  }
+
   await Future.delayed(const Duration(seconds: 2));
 
+  setState(() {
+    if(buffer.isNotEmpty) {
+      activeTask = buffer.first;
+    }
+    else
+      {
+        activeTask = null;
+      }
+  });
 }
 
 
@@ -138,18 +145,21 @@ class ActiveTaskBox extends StatelessWidget {
 
   Future<void> _ChangeStatus(String routeId, String status) async
   {
+
     var authresponse = await http.put(
       Uri.parse('http://51.20.192.129:80/routes/$routeId/change-status/$status'),
       headers: {
-        'Authorization': 'Bearer ' + await _loadAuthToken(),
+        'Authorization': 'Bearer ${await _loadAuthToken()}',
         'Content-Type': 'application/json',
       },
     );
+    print(routeId + status);
+    print(authresponse.statusCode);
     if(authresponse.statusCode == 200) {
-
+      print("Status changed");
     }
     else {
-
+      print(authresponse.body);
     }
   }
   Future<String> _loadAuthToken() async {
@@ -187,14 +197,7 @@ class ActiveTaskBox extends StatelessWidget {
             },
             child: const Text('Completed'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              // Handle the tap on the "Cancel" button
-              _handleButtonClick(activeTask, "NEW");
 
-            },
-            child: const Text('Cancel'),
-          ),
         ],
       ),
     );

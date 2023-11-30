@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swe_project/pages/StaffHome.dart';
 import 'package:swe_project/pages/driverconfirmation.dart';
+import 'package:swe_project/pages/fueling_person_app.dart';
 import 'package:swe_project/pages/login.dart';
+import 'package:swe_project/pages/maintenance.dart';
 import 'Classes/driver.dart';
 import 'Classes/pair.dart';
 import 'pages/home.dart';
@@ -78,7 +80,7 @@ class MyApp extends StatelessWidget {
 
 Future<User?> _isUserLogin() async{
 
-    //_saveAuthToken('');
+    _saveAuthToken('');
     var authresponse = await _getUser();
 
     if(await _loadAuthToken() == '' || authresponse.statusCode != 200 )
@@ -100,6 +102,7 @@ Future<User?> _isUserLogin() async{
 
   @override
   Widget build(BuildContext context) {
+
       return FutureBuilder<User?>(
           future: _isUserLogin(),
           builder: (context,snapshot) {
@@ -115,6 +118,12 @@ Future<User?> _isUserLogin() async{
                 }
                 if (snapshot.data?.role == 'staff' || snapshot.data?.role == 'admin') {
                   return StaffHomePage(user: snapshot.data!);
+                }
+                if (snapshot.data?.role == 'maintenance') {
+                  return MaintenancePage(); // Redirect to MaintenancePage
+                }
+                if (snapshot.data?.role == 'fuel') {
+                  return FuellingPersonApp(); // Redirect to MaintenancePage
                 }
                 else {
                   return const MyLoginPage();

@@ -51,6 +51,9 @@ class _HistoryPageState extends State<HistoryPage>
   {
     tasks = await _fetchRoutes(driverId.toString(), "COMPLETED");
     await Future.delayed(const Duration(seconds: 1));
+    setState(() {
+
+    });
   }
 
 @override

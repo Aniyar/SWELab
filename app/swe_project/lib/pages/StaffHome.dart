@@ -21,7 +21,7 @@ class StaffHomePage extends StatelessWidget {
     return Scaffold(
       drawer:NavBarStaff(),
       appBar: AppBar(
-        title: Text('Driver Information'),
+        title: Text('Staff Information'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

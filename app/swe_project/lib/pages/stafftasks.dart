@@ -136,12 +136,32 @@ class ActiveTaskBox extends StatelessWidget {
 
 
 
+  void _handleButtonClick(Task_route task_route, String status) {
+    _ChangeStatus(task_route.route_id.toString(), status);
+  }
+
+  Future<void> _ChangeStatus(String routeId, String status) async
+  {
+
+    var authresponse = await http.put(
+      Uri.parse('http://51.20.192.129:80/routes/$routeId/change-status/$status'),
+      headers: {
+        'Authorization': 'Bearer ' + await _loadAuthToken(),
+        'Content-Type': 'application/json',
+      },
+    );
+    print(authresponse.statusCode);
+    if(authresponse.statusCode == 200) {
+      print("Status changed");
+    }
+    else {
+      print(authresponse.body);
+    }
+  }
   Future<String> _loadAuthToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token') ?? ''; // Get the token, or an empty string if not found
   }
-
-
 
 
 
@@ -164,7 +184,13 @@ class ActiveTaskBox extends StatelessWidget {
           Text('Route ID: ${activeTask.route_id}'),
           Text('Driver: ${activeTask.driver.user.firstName}'),
           Text('Status: ${activeTask.status}'),
-
+          ElevatedButton(
+            onPressed: () {
+              // Handle the button press, you can navigate to a new page or perform any action
+              _handleButtonClick(activeTask, 'CANCELLED');
+            },
+            child: const Text('Take task'),
+          )
         ],
       ),
 

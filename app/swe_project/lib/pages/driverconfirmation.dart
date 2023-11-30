@@ -98,7 +98,6 @@ class _ConfirmDriverPageState extends State {
                     labelText: 'LicenseNumber',
                     border: OutlineInputBorder(),
                   ),
-                  obscureText: true,
                 ),
                 SizedBox(height: 16.0),
 
@@ -109,12 +108,13 @@ class _ConfirmDriverPageState extends State {
                     String token = await _loadAuthToken();
                     userAddress = _AdressController.text;
                     userLicenseN = _LicenseNController.text;
-                    Driver driver = await _fetchDriver();
-                    int driverId = driver.id;
+
                     if(userAddress != '' || userLicenseN !='') {
                       http.Response createReponse = await _createDriver(userAddress, userLicenseN, token);
                       if(createReponse.statusCode >= 200 && createReponse.statusCode < 300)
                         {
+                          Driver driver = await _fetchDriver();
+                          int driverId = driver.id;
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => HomePage(driverId: driverId,)),

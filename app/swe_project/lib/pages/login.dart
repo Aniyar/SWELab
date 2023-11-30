@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:swe_project/pages/driverconfirmation.dart';
+import 'package:swe_project/pages/fueling_person_app.dart';
 import 'package:swe_project/pages/home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -11,6 +12,7 @@ import 'package:swe_project/Classes/user.dart';
 
 import '../Classes/driver.dart';
 import 'StaffHome.dart';
+import 'maintenance.dart';
 class MyLoginPage extends StatefulWidget {
   const MyLoginPage({super.key});
   @override
@@ -112,7 +114,23 @@ class _MyLoginPageState extends State {
   }
   else
   {
-    print("wrong input");
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Incorrect Login'),
+          content: Text('Please check your email and password and try again.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
     return null;
   }
   }
@@ -187,10 +205,11 @@ class _MyLoginPageState extends State {
     prefs.setString('email', user.email);
     if (user.role == 'driver') {
       http.Response driverResponse = await _getDriver();
-      Driver driver = await _fetchDriver(driverResponse);
-      prefs.setString('driverId', '${driver.id}');
+
         if(driverResponse.statusCode == 200)
         {
+          Driver driver = await _fetchDriver(driverResponse);
+          prefs.setString('driverId', '${driver.id}');
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) =>  HomePage(driverId: driver.id)),
@@ -212,9 +231,23 @@ class _MyLoginPageState extends State {
         MaterialPageRoute(builder: (context) =>  StaffHomePage(user: user,)),
       );
     }
+    else if (user.role == 'maintenance')
+      {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  MaintenancePage()),
+        );
+      }
+    else if (user.role == 'fuel')
+      {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  FuellingPersonApp()),
+        );
+      }
     else
     {
-      print("something very bad happened");
+
     }
 
   }

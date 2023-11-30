@@ -47,7 +47,13 @@ class _StaffMapPageState extends State<StaffMapPage> {
     print(response.body);
     if (response.statusCode >= 200 && response.statusCode <= 300) {
       print("YAY");
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Route created successfully!'),
+            duration: Duration(seconds: 2), // Adjust the duration as needed
+          ));
     }
+
 
 }
 
