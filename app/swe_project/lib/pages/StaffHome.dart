@@ -1,18 +1,25 @@
+
+
 import 'package:flutter/material.dart';
-import 'package:swe_project/pages/navbar.dart';
-import 'package:swe_project/Classes/user.dart';
 
-import '../Classes/driver.dart';
-class DriverInfoPage extends StatelessWidget {
-  final Driver driver;
+import '../Classes/user.dart';
+import 'navbar.dart';
+import 'navbarStaff.dart';
 
 
-  const DriverInfoPage({Key? key, required this.driver}) : super(key: key);
+
+
+class StaffHomePage extends StatelessWidget {
+
+  final User user;
+
+
+  const StaffHomePage({Key? key, required this.user}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer:NavBar(),
+      drawer:NavBarStaff(),
       appBar: AppBar(
         title: Text('Driver Information'),
       ),
@@ -23,11 +30,16 @@ class DriverInfoPage extends StatelessWidget {
           children: [
             _buildProfileSection(),
             SizedBox(height: 16),
-            _buildInfoRow('Driver Firstname', driver.user.firstName),
-            _buildInfoRow('Driver Lastname', driver.user.lastName),
-            _buildInfoRow('Email', driver.user.email),
-            _buildInfoRow('Phonenumber', driver.user.phoneNumber),
-            _buildInfoRow('Role', driver.user.role),
+            _buildInfoRow('Firstname', user.firstName),
+            _buildInfoRow('Lastname', user.lastName),
+            _buildInfoRow('Email', user.email),
+            _buildInfoRow('Phonenumber', user.phoneNumber),
+            _buildInfoRow('Role', user.role),
+            SizedBox(height: 16),
+            Text('Additional Information:', style: Theme.of(context).textTheme.subtitle1),
+            SizedBox(height: 16),
+            Text('Trips Details:', style: Theme.of(context).textTheme.subtitle1),
+            _buildTripsTable(),
           ],
         ),
       ),
@@ -51,12 +63,12 @@ class DriverInfoPage extends StatelessWidget {
           ),
           child: CircleAvatar(
             radius: 60,
-            backgroundImage: NetworkImage(driver.user.photo),
+            backgroundImage: NetworkImage(user.photo),
           ),
         ),
         SizedBox(height: 16),
         Text(
-          driver.user.firstName,
+          user.firstName,
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ],
@@ -89,6 +101,9 @@ class DriverInfoPage extends StatelessWidget {
     return Container();
   }
 }
+
+
+
 
 
 

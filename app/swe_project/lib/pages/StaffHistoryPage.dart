@@ -4,29 +4,32 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swe_project/pages/task_page.dart';
 import '../Classes/task_route.dart';
+import '../Classes/user.dart';
+
+import 'package:swe_project/pages/tasks.dart';
 import 'package:http/http.dart' as http;
 
-class HistoryPage extends StatefulWidget {
+class StaffHistoryPage extends StatefulWidget {
 
-  final int driverId;
+  final User user;
 
-  const HistoryPage({required this.driverId});
+  const StaffHistoryPage({required this.user});
 
   @override
-  _HistoryPageState createState() => _HistoryPageState();
+  _StaffHistoryPageState createState() => _StaffHistoryPageState();
 }
-class _HistoryPageState extends State<HistoryPage>
+class _StaffHistoryPageState extends State<StaffHistoryPage>
 {
   List<Task_route> tasks = [];
-  late int driverId;
+  late User user;
   Future<String> _loadAuthToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token') ?? ''; // Get the token, or an empty string if not found
   }
 
-  Future<List<Task_route>> _fetchRoutes(String driverId, String status) async {
+  Future<List<Task_route>> _fetchRoutes(String id, String status) async {
     var authresponse = await http.get(
-      Uri.parse('http://51.20.192.129:80/routes/all?driverId=$driverId&status=$status'),
+      Uri.parse('http://51.20.192.129:80/routes/all?staffId=$id&status=$status'),
       headers: {
         'Authorization': 'Bearer ${await _loadAuthToken()}',
         'Content-Type': 'application/json',
@@ -49,15 +52,14 @@ class _HistoryPageState extends State<HistoryPage>
 
   Future<void> _getRoutes() async
   {
-    tasks = await _fetchRoutes(driverId.toString(), "COMPLETED");
-    await Future.delayed(const Duration(seconds: 1));
+    tasks = await _fetchRoutes(user.userId.toString(), "COMPLETED");
   }
 
 @override
   void initState() {
-    driverId = widget.driverId;
-    _getRoutes();
+    user = widget.user;
     super.initState();
+    _getRoutes();
   }
 
 
@@ -74,14 +76,16 @@ class _HistoryPageState extends State<HistoryPage>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => HistoryPage(driverId: driverId),
+                  builder: (context) => StaffHistoryPage(user: user,),
                 ),
               );
             },
           ),
         ],
       ),
-      body: ListView.builder(
+      body:
+          Expanded(
+            child: ListView.builder(
               itemCount: tasks.length,
               itemBuilder: (context, index) {
                 return GestureDetector(
@@ -93,38 +97,13 @@ class _HistoryPageState extends State<HistoryPage>
                       ),
                     );
                   },
-                  child: TaskBox(task: tasks[0]),
+                  child: TaskBox(task: tasks[index]),
                 );
               },
             ),
-          );
+          ),
+    );
   }
 }
 
-class TaskBox extends StatelessWidget {
-  final Task_route task;
-const TaskBox({required this.task});
 
-@override
-Widget build(BuildContext context) {
-  return Container(
-    margin: const EdgeInsets.all(8.0),
-    padding: const EdgeInsets.all(16.0),
-    decoration: BoxDecoration(
-      border: Border.all(color: Colors.black),
-      borderRadius: BorderRadius.circular(8.0),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Route ID: ${task.route_id}'),
-        Text('Driver: ${task.driver.user.firstName}'),
-        Text('Status: ${task.status}'),
-
-      ],
-
-    ),
-  );
-
-}
-}

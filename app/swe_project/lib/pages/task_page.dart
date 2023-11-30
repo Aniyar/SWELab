@@ -26,8 +26,6 @@ class TaskInfoPage extends StatelessWidget {
             _buildInfoItem('Route ID', '${taskRoute.route_id}'),
             _buildInfoItem(
                 'Driver', '${taskRoute.driver.user.firstName} ${taskRoute.driver.user.lastName}'),
-            _buildInfoItem('Staff', '${taskRoute.staff}'),
-            _buildInfoItem('Vehicle', '${taskRoute.vehicle}'),
             _buildInfoItem('Start Point', '${taskRoute.startPoint}'),
             _buildInfoItem('Start Latitude', '${taskRoute.startLat}'),
             _buildInfoItem('Start Longitude', '${taskRoute.startLon}'),

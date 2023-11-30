@@ -10,6 +10,7 @@ import 'package:swe_project/Classes/Token.dart';
 import 'package:swe_project/Classes/user.dart';
 
 import '../Classes/driver.dart';
+import 'StaffHome.dart';
 class MyLoginPage extends StatefulWidget {
   const MyLoginPage({super.key});
   @override
@@ -202,14 +203,20 @@ class _MyLoginPageState extends State {
             MaterialPageRoute(builder: (context) => const ConfirmDriverPage()),
           );
       }
-        else
-          {
-            print("something very bad happened");
-          }
+
     }
-    else {
-      print("");
+    else if (user.role == 'staff')
+    {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) =>  StaffHomePage(user: user,)),
+      );
     }
+    else
+    {
+      print("something very bad happened");
+    }
+
   }
   },
   child: Text('Login'),

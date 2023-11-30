@@ -5,14 +5,14 @@ import 'dart:convert';
 import 'package:location/location.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../Classes/driver.dart';
+
 import '../Classes/task_route.dart';
 import 'navbar.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-import 'dart:math' as math;
+
 import 'package:http/http.dart' as http;
-import 'package:swe_project/Classes/pair.dart';
+
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
@@ -23,7 +23,7 @@ class HomePage extends StatefulWidget {
 
   final int driverId;
 
-  HomePage({required this.driverId});
+  const HomePage({required this.driverId});
 
   @override
   _MyAppState createState() => _MyAppState();
@@ -59,6 +59,8 @@ class _MyAppState extends State<HomePage> {
     super.initState();
     driverId = widget.driverId;
     _Initializevalues();
+    print("HELLO THERE");
+    print(waiting_routes);
 
   }
 
@@ -77,7 +79,7 @@ class _MyAppState extends State<HomePage> {
     var authresponse = await http.get(
       Uri.parse('http://51.20.192.129:80/routes/all?driverId=$driverId&status=$status'),
       headers: {
-        'Authorization': 'Bearer ' + await _loadAuthToken(),
+        'Authorization': 'Bearer ${await _loadAuthToken()}',
         'Content-Type': 'application/json',
       },
     );
@@ -100,10 +102,14 @@ void _Initializevalues() async
   {
     await _getCurrentLocation();
     await _isActiveTask();
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(const Duration(seconds: 3));
     await _createRoutes();
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(const Duration(seconds: 3));
     await _addMarkers();
+    await Future.delayed(const Duration(seconds: 3));
+    setState(() {
+
+    });
 
   }
 
@@ -131,6 +137,7 @@ void _Initializevalues() async
               {
                 _sendLocation(Current_User_Lat, Current_User_Long);
                 _getPolyline(tasklat,tasklong);
+                _createRoutes();
               }
 
       },
@@ -198,19 +205,18 @@ Future<void> _sendLocation(double longitude, double latitude) async
 
 Future<void> _isActiveTask() async
 {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
   List<Task_route> tasks = await _fetchRoutes(driverId.toString(), "IN_PROGRESS");
-  //print(tasks.isEmpty);
-  if(tasks.isEmpty)
+
+
+  setState(() {
+    if(tasks.isEmpty)
     {
       isActiveRoute = false;
     }
-  else
+    else
     {
       isActiveRoute = true;
     }
-  setState(() {
-
   });
 }
 
@@ -219,15 +225,17 @@ Future<void> _createRoutes() async
   if(isActiveRoute) {
     task_route =
         (await _fetchRoutes(driverId.toString(), "IN_PROGRESS"))[0];
-    waiting_routes = [];
   }
   else
   {
     waiting_routes = await _fetchRoutes(driverId.toString(), "WAITING");
   }
   setState(() {
-    tasklat = double.parse(task_route.endLat);
-    tasklong = double.parse(task_route.endLon);
+   if(isActiveRoute)
+     {
+       tasklat = double.parse(task_route.endLat);
+       tasklong = double.parse(task_route.endLon);
+     }
   });
 }
 
@@ -311,15 +319,8 @@ Future<void> _createRoutes() async
     );
   }
 
-  Color _getRandomColor()
-  {
-    return Color((math.Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0);
-  }
 
-bool isInitialized(dynamic variable)
-{
-  return variable != null;
-}
+
 
 Set<Marker> _addStartMarkers(List<Task_route> waiting_routes)
    {
@@ -343,7 +344,6 @@ Set<Marker> _addStartMarkers(List<Task_route> waiting_routes)
 }
 Set<Marker> _addActiveMarkers(Task_route task_route)
    {
-  Color color = _getRandomColor();
   Set<Marker> markers = {};
   markers.add(
     Marker(
@@ -389,7 +389,7 @@ Future<void> _addMarkers()
   Widget build(BuildContext context) {
 
     Marker user_marker = Marker(
-        markerId: MarkerId("0"),
+        markerId: const MarkerId("0"),
         position: LatLng(Current_User_Lat,Current_User_Long),
         icon: BitmapDescriptor.defaultMarker
     );
@@ -408,9 +408,9 @@ Future<void> _addMarkers()
       home:Scaffold(
         drawer:NavBar(),
         appBar: AppBar(
-          title: Text('Home',
+          title: const Text('Home',
             style: TextStyle(color: Colors.yellowAccent),),
-            iconTheme: IconThemeData(color: Colors.yellow),
+            iconTheme: const IconThemeData(color: Colors.yellow),
           backgroundColor: Colors.brown
         ),
     body: GoogleMap(
@@ -426,7 +426,7 @@ Future<void> _addMarkers()
     markers: markers,
       polylines: {
       Polyline(
-          polylineId: PolylineId("route"),
+          polylineId: const PolylineId("route"),
         points: polylineCoordinates,
           color: Colors.green,
         width: 6,

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:swe_project/pages/StaffHome.dart';
 import 'package:swe_project/pages/driverconfirmation.dart';
 import 'package:swe_project/pages/login.dart';
 import 'Classes/driver.dart';
@@ -19,7 +20,7 @@ void main() {
     home: MyApp()
   ));
 }
-
+int id = 1;
 
 class MyApp extends StatelessWidget {
 
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
   }
   Future<http.Response> _getDriver(String token) async
   {
+
     var driverresponse = await http.get(
       Uri.parse('http://51.20.192.129:80/drivers/current'),
       headers: {
@@ -63,6 +65,10 @@ class MyApp extends StatelessWidget {
     return authresponse;
   }
 
+  Future<User> _fetchUser(http.Response response) async
+  {
+    return User.fromJson(jsonDecode(response.body) as Map<String,dynamic>);
+  }
 
   Future<void> _saveAuthToken(String token) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -70,37 +76,50 @@ class MyApp extends StatelessWidget {
   }
 
 
-Future<Pair> _isUserLogin() async{
+Future<User?> _isUserLogin() async{
 
     //_saveAuthToken('');
     var authresponse = await _getUser();
 
     if(await _loadAuthToken() == '' || authresponse.statusCode != 200 )
       {
-        return Pair('',-1);
+        return null;
       }
     else
       {
-        Driver driver = await _fetchDriver();
-        return Pair(driver.user.role, driver.id);
+        User user = await _fetchUser(authresponse);
+        if(user.role == 'driver')
+          {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            id = int.parse(prefs.getString('driverId')!);
+          }
+        return user;
       }
-
 }
+
+
   @override
   Widget build(BuildContext context) {
-      return FutureBuilder<Pair>(
+      return FutureBuilder<User?>(
           future: _isUserLogin(),
           builder: (context,snapshot) {
             if(snapshot.connectionState == ConnectionState.done) {
-              int id = snapshot.data?.b;
-              if(snapshot.data?.a == 'driver')
-                {
-                  return HomePage(driverId: id);
-                }
-              else
+              if (snapshot.data == null)
                 {
                   return const MyLoginPage();
                 }
+              else {
+                if (snapshot.data?.role == 'driver') {
+
+                  return HomePage(driverId: id);
+                }
+                if (snapshot.data?.role == 'staff') {
+                  return StaffHomePage(user: snapshot.data!);
+                }
+                else {
+                  return const MyLoginPage();
+                }
+              }
     }
             else
               {

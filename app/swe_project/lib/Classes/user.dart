@@ -39,7 +39,6 @@ final int userId;
     'lastName' : String lastName,
     'email' : String email,
     'phoneNumber' : String phoneNumber,
-    'profilePictureFileLink' : var photo,
     'createdDate' : var Date,
 
     } =>

@@ -4,25 +4,25 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swe_project/pages/task_page.dart';
 import '../Classes/task_route.dart';
-
+import '../Classes/user.dart';
+import 'navbar.dart';
 import 'package:http/http.dart' as http;
 
 
 
-class TasksPage extends StatefulWidget {
+class StaffTasksPage extends StatefulWidget {
 
-  final int driverId;
+  final User user;
 
-  const TasksPage({required this.driverId});
+  StaffTasksPage({required this.user});
 
-  @override
-  _TaskPageState createState() => _TaskPageState();
+  _StaffTaskPageState createState() => _StaffTaskPageState();
 }
 
-class _TaskPageState extends State<TasksPage>
+class _StaffTaskPageState extends State<StaffTasksPage>
 {
   List<Task_route> tasks = [];
-  late int driverId;
+  late User user;
   Task_route? activeTask;
 
   Future<String> _loadAuthToken() async {
@@ -32,7 +32,7 @@ class _TaskPageState extends State<TasksPage>
 
   Future<List<Task_route>> _fetchRoutes(String driverId, String status) async {
     var authresponse = await http.get(
-      Uri.parse('http://51.20.192.129:80/routes/all?driverId=$driverId&status=$status'),
+      Uri.parse('http://51.20.192.129:80/routes/all?staffId=$driverId&status=$status'),
       headers: {
         'Authorization': 'Bearer ' + await _loadAuthToken(),
         'Content-Type': 'application/json',
@@ -55,37 +55,33 @@ class _TaskPageState extends State<TasksPage>
 
   Future<void> _getRoutes() async
   {
-  tasks = await _fetchRoutes(driverId.toString(), "WAITING");
-  List<Task_route> buffer =(await _fetchRoutes(driverId.toString(), "IN_PROGRESS"));
-  if(buffer.isNotEmpty) {
-    buffer.first;
+    tasks = await _fetchRoutes(user.userId.toString(), "WAITING");
+    activeTask = (await _fetchRoutes(user.userId.toString(), "IN_PROGRESS")).first;
   }
-  await Future.delayed(const Duration(seconds: 2));
-}
 
 
 
 
-@override
-void initState() {
-    driverId = widget.driverId;
-    _getRoutes();
+
+  void initState() {
+    user = widget.user;
     super.initState();
+    _getRoutes();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Task List'),
+        title: Text('Task List'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: () async {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => TasksPage(driverId: driverId),
+                  builder: (context) =>  StaffTasksPage(user: user,),
                 ),
               );
             },
@@ -134,7 +130,7 @@ void initState() {
 class ActiveTaskBox extends StatelessWidget {
   final Task_route activeTask;
 
-  const ActiveTaskBox({required this.activeTask});
+  ActiveTaskBox({required this.activeTask});
 
   void _handleButtonClick(Task_route task_route, String status) {
     _ChangeStatus(task_route.route_id.toString(), status);
@@ -168,8 +164,8 @@ class ActiveTaskBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(8.0),
-      padding: const EdgeInsets.all(16.0),
+      margin: EdgeInsets.all(8.0),
+      padding: EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Colors.blue, // Customize the color as needed
         borderRadius: BorderRadius.circular(8.0),
@@ -177,7 +173,7 @@ class ActiveTaskBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Active Task',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
@@ -189,15 +185,14 @@ class ActiveTaskBox extends StatelessWidget {
               // Handle the tap on the "Completed" button
               _handleButtonClick(activeTask, "COMPLETED");
             },
-            child: const Text('Completed'),
+            child: Text('Completed'),
           ),
           ElevatedButton(
             onPressed: () {
               // Handle the tap on the "Cancel" button
               _handleButtonClick(activeTask, "NEW");
-
             },
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
         ],
       ),
@@ -243,13 +238,13 @@ class TaskBox extends StatelessWidget {
 
 
 
-  const TaskBox({required this.task});
+  TaskBox({required this.task});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(8.0),
-      padding: const EdgeInsets.all(16.0),
+      margin: EdgeInsets.all(8.0),
+      padding: EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black),
         borderRadius: BorderRadius.circular(8.0),
@@ -261,13 +256,13 @@ class TaskBox extends StatelessWidget {
           Text('Driver: ${task.driver.user.firstName}'),
           Text('Status: ${task.status}'),
           // Add more task information as needed
-      ElevatedButton(
-        onPressed: () {
-          // Handle the button press, you can navigate to a new page or perform any action
-          _handleButtonClick(task);
-        },
-        child: const Text('Take task'),
-      )
+          ElevatedButton(
+            onPressed: () {
+              // Handle the button press, you can navigate to a new page or perform any action
+              _handleButtonClick(task);
+            },
+            child: Text('Take task'),
+          )
         ],
 
       ),
