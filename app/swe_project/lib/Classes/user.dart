@@ -50,7 +50,7 @@ final int userId;
             lastName: lastName,
             email: email,
             phoneNumber: phoneNumber,
-            photo: 'cat.png',
+            photo: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
 
         ),
     _ => throw const FormatException('Failed to load User.'),

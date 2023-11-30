@@ -113,7 +113,7 @@ Future<User?> _isUserLogin() async{
 
                   return HomePage(driverId: id);
                 }
-                if (snapshot.data?.role == 'staff') {
+                if (snapshot.data?.role == 'staff' || snapshot.data?.role == 'admin') {
                   return StaffHomePage(user: snapshot.data!);
                 }
                 else {

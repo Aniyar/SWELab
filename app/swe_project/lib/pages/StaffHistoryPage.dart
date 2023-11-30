@@ -6,7 +6,7 @@ import 'package:swe_project/pages/task_page.dart';
 import '../Classes/task_route.dart';
 import '../Classes/user.dart';
 
-import 'package:swe_project/pages/tasks.dart';
+
 import 'package:http/http.dart' as http;
 
 class StaffHistoryPage extends StatefulWidget {
@@ -53,6 +53,9 @@ class _StaffHistoryPageState extends State<StaffHistoryPage>
   Future<void> _getRoutes() async
   {
     tasks = await _fetchRoutes(user.userId.toString(), "COMPLETED");
+    setState(() {
+
+    });
   }
 
 @override
@@ -68,17 +71,12 @@ class _StaffHistoryPageState extends State<StaffHistoryPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('History'),
+        title: const Text('Staff History'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () async {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StaffHistoryPage(user: user,),
-                ),
-              );
+              await _getRoutes();
             },
           ),
         ],
@@ -104,6 +102,45 @@ class _StaffHistoryPageState extends State<StaffHistoryPage>
           ),
     );
   }
+
+
 }
+
+class TaskBox extends StatelessWidget {
+  final Task_route task;
+
+
+
+
+
+
+
+  const TaskBox({required this.task});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Route ID: ${task.route_id}'),
+          Text('Driver: ${task.driver.user.firstName}'),
+          Text('Status: ${task.status}'),
+          // Add more task information as needed
+
+        ],
+
+      ),
+    );
+
+  }
+}
+
 
 

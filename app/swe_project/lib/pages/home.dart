@@ -135,6 +135,9 @@ void _Initializevalues() async
             }
             if(isActiveRoute)
               {
+                  tasklat = double.parse(task_route.endLat);
+                  tasklong = double.parse(task_route.endLon);
+
                 _sendLocation(Current_User_Lat, Current_User_Long);
                 _getPolyline(tasklat,tasklong);
                 _createRoutes();
@@ -169,6 +172,8 @@ Future<void> _sendLocation(double longitude, double latitude) async
       })
 
   );
+
+  print("LOCATION UPDATE: ${authresponse.statusCode}");
 }
 
 
@@ -194,6 +199,11 @@ Future<void> _sendLocation(double longitude, double latitude) async
       // Check if the widget is still mounted before updating the state
       if (mounted) {
         setState(() {
+          if(isActiveRoute)
+          {
+            tasklat = double.parse(task_route.endLat);
+            tasklong = double.parse(task_route.endLon);
+          }
           polylineCoordinates = tempPolylineCoordinates;
         });
       }
@@ -231,11 +241,11 @@ Future<void> _createRoutes() async
     waiting_routes = await _fetchRoutes(driverId.toString(), "WAITING");
   }
   setState(() {
-   if(isActiveRoute)
-     {
-       tasklat = double.parse(task_route.endLat);
-       tasklong = double.parse(task_route.endLon);
-     }
+    if(isActiveRoute)
+    {
+      tasklat = double.parse(task_route.endLat);
+      tasklong = double.parse(task_route.endLon);
+    }
   });
 }
 

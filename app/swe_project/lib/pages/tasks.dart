@@ -61,6 +61,7 @@ class _TaskPageState extends State<TasksPage>
     buffer.first;
   }
   await Future.delayed(const Duration(seconds: 2));
+
 }
 
 
@@ -82,12 +83,7 @@ void initState() {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () async {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TasksPage(driverId: driverId),
-                ),
-              );
+              await _getRoutes();
             },
           ),
         ],

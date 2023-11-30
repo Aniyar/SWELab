@@ -205,7 +205,7 @@ class _MyLoginPageState extends State {
       }
 
     }
-    else if (user.role == 'staff')
+    else if (user.role == 'staff' || user.role == 'admin')
     {
       Navigator.push(
         context,

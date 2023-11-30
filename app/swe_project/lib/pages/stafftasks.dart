@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swe_project/pages/task_page.dart';
 import '../Classes/task_route.dart';
 import '../Classes/user.dart';
-import 'navbar.dart';
+
 import 'package:http/http.dart' as http;
 
 
@@ -52,11 +52,17 @@ class _StaffTaskPageState extends State<StaffTasksPage>
     }
   }
 
-
   Future<void> _getRoutes() async
   {
     tasks = await _fetchRoutes(user.userId.toString(), "WAITING");
-    activeTask = (await _fetchRoutes(user.userId.toString(), "IN_PROGRESS")).first;
+    List<Task_route> buffer =(await _fetchRoutes(user.userId.toString(), "IN_PROGRESS"));
+    if(buffer.isNotEmpty) {
+      buffer.first;
+    }
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() {
+
+    });
   }
 
 
@@ -73,17 +79,12 @@ class _StaffTaskPageState extends State<StaffTasksPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Task List'),
+        title: const Text('Task List'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh),
             onPressed: () async {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>  StaffTasksPage(user: user,),
-                ),
-              );
+              await _getRoutes();
             },
           ),
         ],
@@ -127,31 +128,14 @@ class _StaffTaskPageState extends State<StaffTasksPage>
   }
 }
 
+
 class ActiveTaskBox extends StatelessWidget {
   final Task_route activeTask;
 
   ActiveTaskBox({required this.activeTask});
 
-  void _handleButtonClick(Task_route task_route, String status) {
-    _ChangeStatus(task_route.route_id.toString(), status);
-  }
 
-  Future<void> _ChangeStatus(String routeId, String status) async
-  {
-    var authresponse = await http.put(
-      Uri.parse('http://51.20.192.129:80/routes/$routeId/change-status/$status'),
-      headers: {
-        'Authorization': 'Bearer ' + await _loadAuthToken(),
-        'Content-Type': 'application/json',
-      },
-    );
-    if(authresponse.statusCode == 200) {
 
-    }
-    else {
-
-    }
-  }
   Future<String> _loadAuthToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token') ?? ''; // Get the token, or an empty string if not found
@@ -173,29 +157,17 @@ class ActiveTaskBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Active Task',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           Text('Route ID: ${activeTask.route_id}'),
           Text('Driver: ${activeTask.driver.user.firstName}'),
           Text('Status: ${activeTask.status}'),
-          ElevatedButton(
-            onPressed: () {
-              // Handle the tap on the "Completed" button
-              _handleButtonClick(activeTask, "COMPLETED");
-            },
-            child: Text('Completed'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Handle the tap on the "Cancel" button
-              _handleButtonClick(activeTask, "NEW");
-            },
-            child: Text('Cancel'),
-          ),
+
         ],
       ),
+
     );
   }
 }
@@ -204,9 +176,6 @@ class TaskBox extends StatelessWidget {
   final Task_route task;
 
 
-  void _handleButtonClick(Task_route task_route) {
-    _ChangeStatus(task_route.route_id.toString(), 'IN_PROGRESS');
-  }
 
   Future<String> _loadAuthToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -215,22 +184,6 @@ class TaskBox extends StatelessWidget {
 
 
 
-  Future<void> _ChangeStatus(String routeId, String status) async
-  {
-    var authresponse = await http.put(
-      Uri.parse('http://51.20.192.129:80/routes/$routeId/change-status/$status'),
-      headers: {
-        'Authorization': 'Bearer ' + await _loadAuthToken(),
-        'Content-Type': 'application/json',
-      },
-    );
-    if(authresponse.statusCode == 200) {
-
-    }
-    else {
-
-    }
-  }
 
 
 
@@ -256,13 +209,6 @@ class TaskBox extends StatelessWidget {
           Text('Driver: ${task.driver.user.firstName}'),
           Text('Status: ${task.status}'),
           // Add more task information as needed
-          ElevatedButton(
-            onPressed: () {
-              // Handle the button press, you can navigate to a new page or perform any action
-              _handleButtonClick(task);
-            },
-            child: Text('Take task'),
-          )
         ],
 
       ),

@@ -5,12 +5,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swe_project/pages/StaffHome.dart';
 import 'package:swe_project/pages/home.dart';
-import 'package:swe_project/pages/tasks.dart';
-import 'package:swe_project/pages/history.dart';
-import 'package:swe_project/pages/driverinfo.dart';
+import 'package:swe_project/pages/stafftasks.dart';
+
 import 'package:swe_project/Classes/user.dart';
 
-import '../Classes/driver.dart';
+import 'CreateRoute.dart';
 import 'StaffHistoryPage.dart';
 class NavBarStaff extends StatefulWidget {
   @override
@@ -18,7 +17,6 @@ class NavBarStaff extends StatefulWidget {
 }
 class _NavbarStaffState extends State<NavBarStaff>
 {
-  late String username;
   late String email;
   late String firstName;
   late String lastName;
@@ -50,7 +48,6 @@ class _NavbarStaffState extends State<NavBarStaff>
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(()
     {
-      username = prefs.getString('username')!;
       email = prefs.getString('email')!;
       firstName = prefs.getString('firstName')!;
       lastName = prefs.getString('lastName')!;
@@ -81,7 +78,6 @@ class _NavbarStaffState extends State<NavBarStaff>
               )
           ),
           ListTile(
-            //leading: const Icon(),
               title: const Text('Personal Information'),
               onTap: () async => {
             user = await _fetchUser(),
@@ -109,11 +105,21 @@ class _NavbarStaffState extends State<NavBarStaff>
                 user = await _fetchUser(),
                 Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => StaffHistoryPage(user: user))
+                    MaterialPageRoute(builder: (context) => StaffTasksPage(user: user))
                 ),
               }
           ),
-
+          ListTile(
+            //leading: const Icon(),
+              title: const Text('Create routes'),
+              onTap: () async => {
+                user = await _fetchUser(),
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => StaffMapPage(user: user))
+                ),
+              }
+          ),
         ],
       ),
     );

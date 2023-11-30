@@ -71,12 +71,7 @@ class _HistoryPageState extends State<HistoryPage>
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () async {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HistoryPage(driverId: driverId),
-                ),
-              );
+              await _getRoutes();
             },
           ),
         ],
